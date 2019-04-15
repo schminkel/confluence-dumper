@@ -140,3 +140,4 @@ ENV/
 
 export
 settings.py
+\.DS_Store
