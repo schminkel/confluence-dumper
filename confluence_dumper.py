@@ -24,6 +24,7 @@ from lxml.etree import XMLSyntaxError
 
 import utils
 import settings
+import datetime
 
 
 CONFLUENCE_DUMPER_VERSION = '1.0.0'
@@ -315,7 +316,7 @@ def fetch_page_recursively(page_id, folder_path, download_folder, html_template,
             counter += len(response['results'])
             for attachment in response['results']:
                 download_url = attachment['_links']['download']
-                attachment_id = attachment['id'][3:]
+                attachment_id = attachment['id']
                 attachment_info = download_attachment(download_url, download_folder, attachment_id,
                                                       attachment_duplicate_file_names, attachment_file_matching,
                                                       depth=depth + 1)
@@ -476,11 +477,21 @@ def main():
                 space_index_title = 'Index of Space %s (%s)' % (space_name, space)
                 space_index_content = create_html_index(path_collection)
                 utils.write_html_2_file(space_index_path, space_index_title, space_index_content, html_template)
+
         except utils.ConfluenceException as e:
             error_print('ERROR: %s' % e)
-        except OSError:
+
+        except OSError as e:
             print('WARNING: The space %s has been exported already. Maybe you mentioned it twice in the settings'
                   % space)
+            print("error :: " + e)
+
+
+
+    # RENAME EXPORT_FOLDER to datetime format
+    dest_dir = datetime.datetime.now().isoformat('_')
+    dest_dir = dest_dir.replace(':', '-').split('.')[0] + '_backup'
+    os.rename(settings.EXPORT_FOLDER, dest_dir)
 
     # Finished output
     print_finished_output()

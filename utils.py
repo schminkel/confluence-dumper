@@ -10,10 +10,12 @@
 # This work is licensed under the terms of the MIT license.
 # See the LICENSE.md file in the top-level directory.
 
-import requests
 import shutil
 import re
 import urllib.parse
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 
 class ConfluenceException(Exception):
@@ -32,7 +34,14 @@ def http_get(request_url, auth=None, headers=None, verify_peer_certificate=True,
     :returns: JSON response.
     :raises: ConfluenceException in the case of the server does not answer HTTP code 200.
     """
-    response = requests.get(request_url, auth=auth, headers=headers, verify=verify_peer_certificate, proxies=proxies)
+    session = requests.Session()
+    retry = Retry(connect=3, backoff_factor=0.5)
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+
+    #print("http-get :: " + request_url)
+    response = session.get(request_url, auth=auth, headers=headers, verify=verify_peer_certificate, proxies=proxies)
     if 200 == response.status_code:
         return response.json()
     else:
@@ -51,7 +60,14 @@ def http_download_binary_file(request_url, file_path, auth=None, headers=None, v
     :param proxies: (optional) Dictionary mapping protocol to the URL of the proxy.
     :raises: ConfluenceException in the case of the server does not answer with HTTP code 200.
     """
-    response = requests.get(request_url, stream=True, auth=auth, headers=headers, verify=verify_peer_certificate,
+    session = requests.Session()
+    retry = Retry(connect=3, backoff_factor=0.5)
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+
+    #print("http-download :: " + request_url)
+    response = session.get(request_url, stream=True, auth=auth, headers=headers, verify=verify_peer_certificate,
                             proxies=proxies)
     if 200 == response.status_code:
         with open(file_path, 'wb') as downloaded_file:
